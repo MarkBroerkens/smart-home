@@ -42,7 +42,7 @@ services:
       - data:/usr/src/paperless/data
       - export:/usr/src/paperless/export
       - media:/usr/src/paperless/media
-      - consume:/usr/src/paperless/consume
+      - ${PAPERLESS_INBOX_PATH:?Undefined Env-Variable}:/usr/src/paperless/consume
     environment:
       PAPERLESS_REDIS: redis://broker:6379
       USERMAP_UID: 1000
@@ -58,4 +58,3 @@ volumes:
   data:
   export:
   media:
-  consume:
