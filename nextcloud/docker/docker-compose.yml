@@ -1,0 +1,57 @@
+# docker-compose file for running paperless from the Docker Hub.
+# This file contains everything paperless needs to run.
+# Paperless supports amd64, arm and arm64 hardware.
+#
+# All compose files of paperless configure paperless in the following way:
+#
+# - Paperless is (re)started on system boot, if it was running before shutdown.
+# - Docker volumes for storing data are managed by Docker.
+# - Folders for importing and exporting files are created in the same directory
+#   as this file and mounted to the correct folders inside the container.
+# - Paperless listens on port 8010.
+# - backup is created 
+
+# - Copy this file as 'docker-compose.yml' and the files 'docker-compose.env'
+#   and '.env' into a folder.
+# - Run 'docker-compose pull'.
+# - Run 'docker-compose up -d'.
+
+version: "3.8"
+services:
+  nextcloud:
+    image: ghcr.io/linuxserver/nextcloud
+    container_name: nextcloud
+    environment:
+      - PUID=1000
+      - PGID=100
+      - TZ=Europe/Berlin
+    volumes:
+      - config:/config
+      - data:/data
+    ports:
+      - 443:443
+    restart: unless-stopped
+    labels:
+      # stop container while it's volumes are being backed up:
+      - "docker-volume-backup.stop-during-backup=nextcloud"
+
+  backup:
+    # https://github.com/offen/docker-volume-backup
+    image: offen/docker-volume-backup
+    restart: unless-stopped
+    environment:
+      BACKUP_STOP_CONTAINER_LABEL: nextcloud
+      BACKUP_CRON_EXPRESSION: "0 5 * * *"
+      BACKUP_UID: 1000
+      BACKUP_GID: 100
+      BACKUP_FILENAME: backup-nexcloud-latest.tar.gz
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro # Allow use of the "stop-during-backup" feature
+      - config:/backup/config:ro    # Mount the data volumes (as read-only)
+      - data:/backup/data:ro
+      - /srv/dev-disk-by-uuid-98310a8c-903f-4c82-a736-1c78aa9fbae2/backups:/archive # Mount a local folder as the backup archive      
+      
+volumes:
+  config:
+  data:
+

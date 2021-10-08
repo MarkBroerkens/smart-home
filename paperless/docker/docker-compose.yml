@@ -1,0 +1,103 @@
+# docker-compose file for running paperless from the Docker Hub.
+# This file contains everything paperless needs to run.
+# Paperless supports amd64, arm and arm64 hardware.
+#
+# All compose files of paperless configure paperless in the following way:
+#
+# - Paperless is (re)started on system boot, if it was running before shutdown.
+# - Docker volumes for storing data are managed by Docker.
+# - Folders for importing and exporting files are created in the same directory
+#   as this file and mounted to the correct folders inside the container.
+# - Paperless listens on port 8010.
+# - backup is created 
+
+# - Copy this file as 'docker-compose.yml' and the files 'docker-compose.env'
+#   and '.env' into a folder.
+# - Run 'docker-compose pull'.
+# - Run 'docker-compose run --rm webserver createsuperuser' to create a user.
+# - Run 'docker-compose up -d'.
+
+version: "3.8"
+services:
+  broker:
+    image: redis:6.0
+    restart: unless-stopped
+    volumes:
+      - redis:/data
+    labels:
+      # stop container while it's volumes are being backed up:
+      - "docker-volume-backup.stop-during-backup=paperless"
+
+  db:
+    image: postgres:13
+    restart: unless-stopped
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: paperless
+      POSTGRES_USER: paperless
+      POSTGRES_PASSWORD: paperless
+    labels:
+      # stop container while it's volumes are being backed up:
+      - "docker-volume-backup.stop-during-backup=paperless"
+
+  webserver:
+    image: jonaswinkler/paperless-ng:latest
+    restart: unless-stopped
+    depends_on:
+      - db
+      - broker
+    ports:
+      - 8010:8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    volumes:
+      - data:/usr/src/paperless/data
+      - export:/usr/src/paperless/export
+      - media:/usr/src/paperless/media
+      - /srv/dev-disk-by-uuid-98310a8c-903f-4c82-a736-1c78aa9fbae2/inbox_private:/usr/src/paperless/consume
+    environment:
+      PAPERLESS_REDIS: redis://broker:6379
+      PAPERLESS_DBHOST: db
+      USERMAP_UID: 1000
+      USERMAP_GID: 100
+      PAPERLESS_TIME_ZONE: Europe/Berlin
+      PAPERLESS_OCR_LANGUAGE: deu
+      PAPERLESS_FILENAME_FORMAT: "{created_year}/{document_type}/{correspondent}/{created}_{title}"
+      PAPERLESS_IGNORE_DATES: 02.07.1973,02.07.1975,03.02.2015,26.07.2019
+      PAPERLESS_CONSUMER_IGNORE_PATTERNS: '[".DS_STORE/*", "._*", ".stfolder/*", ".smb*"]'
+      PAPERLESS_CONSUMER_POLLING: 60
+      PAPERLESS_CONSUMER_RECURSIVE: 1
+     
+    labels:
+      # stop container while it's volumes are being backed up:
+      - "docker-volume-backup.stop-during-backup=paperless"
+    
+  backup:
+    # https://github.com/offen/docker-volume-backup
+    image: offen/docker-volume-backup
+    restart: unless-stopped
+    environment:
+      BACKUP_STOP_CONTAINER_LABEL: paperless
+      BACKUP_CRON_EXPRESSION: "0 4 * * *"
+      BACKUP_UID: 1000
+      BACKUP_GID: 100
+      BACKUP_FILENAME: backup-paperless_private-latest.tar.gz
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro # Allow use of the "stop-during-backup" feature
+      - data:/backup/data:ro    # Mount the data volumes (as read-only)
+      - export:/backup/export:ro
+      - media:/backup/media:ro
+      - redis:/backup/redis:ro
+      - pgdata:/backup/pqdata:ro
+      - /srv/dev-disk-by-uuid-98310a8c-903f-4c82-a736-1c78aa9fbae2//backups:/archive # Mount a local folder as the backup archive      
+      
+volumes:
+  data:
+  export:
+  media:
+  redis:
+  pgdata:
