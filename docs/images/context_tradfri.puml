@@ -1,0 +1,33 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Context Diagram for Light Automation using IKEA Tradfri and Alexa
+
+Enterprise_Boundary(home, Home) {
+    Person(admin, "Admin")
+    Person(user, "User")
+    System(system, "IKEA Tradfri Bridge", "automation", $tags="weakness")
+    System_Ext(app, "IKEA App", "")
+    System_Ext(alexa_echo, "Alexa Echo", "")
+    System_Ext(sensors, "Sensors", "e.g. switches, motion sensors\n(ZigBee)")
+    System_Ext(actuators, "Actuators", "e.g. light bulbs, LED panels (ZigBee)")    
+}
+
+System_Ext(alexa_cloud, "Alexa Cloud", "", $tags="weakness")
+
+Rel(user, sensors, "uses", "hmi")
+Rel(user, alexa_echo, "uses", "voice")
+Rel(admin, app, "uses", "hmi")
+
+Rel(alexa_echo, alexa_cloud, "triggers Tradfri skill", "https")
+Rel(alexa_cloud, system, "request status change", "https")
+
+Rel(app, system, "configures", "CoAP")
+Rel(sensors, system, "request status change", "ZigBee")
+Rel(system, actuators, "request status change", "ZigBee")
+
+Rel(sensors, actuators, "request status change", "ZigBee", "direct connections")
+
+SHOW_FLOATING_LEGEND()
+AddElementTag("weakness", $borderColor="#d73027")
+@enduml

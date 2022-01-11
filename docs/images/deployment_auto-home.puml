@@ -1,0 +1,44 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+title Deployment Diagram for Auto-Home Control System
+Person(user, "User")
+Person(admin, "Admin")
+
+Deployment_Node(raspberry, "Raspberry PI", "hostname: autohome", "Raspberry PI with\nRPI-RF-MOD (Homematic IP)\nand Conbee II (ZigBee)") {
+
+   Deployment_Node(container_homematic_control, "Docker Container HomeMatic Control", "ghcr.io/jens-maus/raspberrymatic", "HW access to RPI-RF-MOD") {
+       Container(homematic_control, "HomeMatic Control", "Homematic IP, REST, UI", "Controls Homematic devices. Provides Web UI and REST-API")
+   }
+   Deployment_Node(container_zigbee_control, "Docker Container ZigBee Control", "deconzcommunity/deconz", "HW access to ConBee II USB Stick") {
+       Container(zigbee_control, "ZigBee Control", "ZigBee, REST, UI", "Controls ZigBee devices. Provides Phoscon App UI and REST-APIs")
+   }
+   Deployment_Node(container_integration_automation, "Docker Container Integration and Automation", "buanet/iobroker") {
+       Container(integration_automation,"Integration and Automation", "REST, HAP, UI", "Integrates homematic and ZigBee and forwards a subset of devices to HomeKit devices. Enables cross system automation.")
+   }    
+}
+
+Deployment_Node(iphone, "iPhone", "") {
+    System_Ext(home_app, "Home App", "switches light bulbs")
+    System_Ext(siri, "Siri", "voice control")
+}
+
+Rel(user, home_app, "uses", "hmi")
+Rel(user, siri, "uses", "voice")
+Rel_R(siri, home_app, "controls", "")
+
+Rel_L(integration_automation, homematic_control, "controls", "REST")
+Rel_R(integration_automation, zigbee_control, "controls", "REST")
+
+Rel_U(admin, integration_automation, "configures", "http: autohome:8081", "configures")
+Rel_U(admin, zigbee_control, "configures", "http: autohome:8090", "configures")
+Rel_U(admin, homematic_control, "configures", "http: autohome", "configures")
+
+Rel(home_app, integration_automation, "controls", "hap")
+
+
+
+SHOW_FLOATING_LEGEND()
+AddElementTag("weakness", $borderColor="#d73027")
+@enduml
+

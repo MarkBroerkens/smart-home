@@ -1,0 +1,49 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Container Diagram for Auto-Home Control System
+
+Enterprise_Boundary(home, Home) {
+    Person(user, "User")
+    Person(admin, "Admin")
+    System_Boundary(c1, "Auto-Home Control System") {
+       Container(homematic_control, "HomeMatic Control", "Homematic IP, REST, UI", "Controls Homematic devices. Provides Web UI and REST-API")
+       Container(zigbee_control, "ZigBee Control", "ZigBee, REST, UI", "Controls ZigBee devices. Provides Phoscon App UI and REST-APIs")
+       Container(integration_automation,"Integration and Automation", "REST, HAP, UI", "Integrates homematic and ZigBee and forwards a subset of devices to HomeKit devices. Enables cross system automation.")
+    }
+
+    System_Ext(homematic_sensors, "Homematic IP Sensors", "e.g. temperature sensor (Homematic IP)")
+    System_Ext(tradfri_sensors, "IKEA Sensors", "e.g. light bulbs and motion detector\n(ZigBee)")
+    System_Ext(homematic_actuators, "Homematic IP Actuators", "e.g. floor heating (Homematic IP)")
+    System_Ext(tradfri_actuators, "IKEA Actuators", "e.g. light bulbs\n(ZigBee)")
+    System_Ext(home_app, "Home App", "switches light bulbs")
+    System_Ext(siri, "Siri", "voice control")
+}
+
+Rel(user, homematic_sensors, "uses", "hmi")
+Rel(user, tradfri_sensors, "uses", "hmi")
+Rel(user, home_app, "uses", "hmi")
+Rel(user, siri, "uses", "voice")
+Rel(siri, home_app, "controls", "")
+
+Rel_L(integration_automation, homematic_control, "controls", "REST")
+Rel_R(integration_automation, zigbee_control, "controls", "REST")
+
+Rel_U(admin, integration_automation, "configures", "hmi", "configures")
+Rel_U(admin, zigbee_control, "configures", "hmi", "configures")
+Rel_U(admin, homematic_control, "configures", "hmi", "configures")
+
+Rel(homematic_control, homematic_actuators, "controls", "Homematic IP")
+Rel(zigbee_control, tradfri_actuators, "request light status change", "ZigBee")
+Rel(homematic_sensors, homematic_control, "indicates status", "Homematic IP")
+Rel(tradfri_sensors, zigbee_control, "request light status change", "ZigBee")
+
+Rel(home_app, integration_automation, "controls", "hap")
+
+Rel(tradfri_sensors, tradfri_actuators, "request light status change", "ZigBee", "direct connections")
+Rel(homematic_sensors, homematic_actuators, "controls", "Homematic IP", "direct connections")
+
+SHOW_FLOATING_LEGEND()
+AddElementTag("weakness", $borderColor="#d73027")
+@enduml
+

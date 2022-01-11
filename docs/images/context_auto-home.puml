@@ -1,0 +1,38 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Context Diagram for Auto-Home Control System
+
+Enterprise_Boundary(home, Home) {
+    Person(user, "User")
+    Person(admin, "Admin")
+    System(system, "Auto-Home Control")
+    System_Ext(homematic_sensors, "Homematic IP Sensors", "e.g. temperature sensor (Homematic IP)")
+    System_Ext(tradfri_sensors, "IKEA Sensors", "e.g. light bulbs and motion detector\n(ZigBee)")
+    System_Ext(homematic_actuators, "Homematic IP Actuators", "e.g. floor heating (Homematic IP)")
+    System_Ext(tradfri_actuators, "IKEA Actuators", "e.g. light bulbs\n(ZigBee)")
+    System_Ext(home_app, "Home App", "switches light bulbs")
+    System_Ext(siri, "Siri", "voice control")
+}
+
+Rel(user, homematic_sensors, "uses", "hmi")
+Rel(user, tradfri_sensors, "uses", "hmi")
+Rel(user, home_app, "uses", "hmi")
+Rel(user, siri, "uses", "voice")
+Rel(siri, home_app, "request light status change")
+
+Rel_U(admin, system, "configures", "hmi")
+
+Rel(system, homematic_actuators, "request light status change", "Homematic IP")
+Rel(system, tradfri_actuators, "request light status change", "ZigBee")
+Rel(homematic_sensors, system, "request light status change", "Homematic IP")
+Rel(tradfri_sensors, system, "request light status change", "ZigBee")
+
+Rel(home_app, system, "request light status change", "async event")
+
+Rel(tradfri_sensors, tradfri_actuators, "request light status change", "ZigBee", "direct connections")
+Rel(homematic_sensors, homematic_actuators, "request light status change", "Homematic IP", "direct connections")
+
+SHOW_FLOATING_LEGEND()
+AddElementTag("weakness", $borderColor="#d73027")
+@enduml

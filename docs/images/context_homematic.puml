@@ -1,0 +1,31 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Context Diagram for Floor Heating using HomeMatic IP with Cloud Access Point
+
+Person(admin, "Admin")
+
+Enterprise_Boundary(home, Home) {
+    Person(user, "User")
+    System(system, "Homematic IP Cloud Access Point", "automation", $tags="weakness")
+    System_Ext(sensors, "Sensors", "e.g. temperature sensor (Homematic IP Wireless)")
+    System_Ext(actuators, "Actuators", "e.g. floor heating (Homematic IP Wireless)")    
+}
+
+System_Ext(homematic_cloud, "Homematic Cloud", $tags="weakness")
+System_Ext(homematic_app, "Homematic App")
+
+Rel(user, sensors, "uses", "hmi")
+Rel(admin, homematic_app, "uses", "hmi", "remote control Homematic IP Access Point")
+
+Rel(homematic_app, homematic_cloud, "configure")
+Rel_R(homematic_cloud, system, "configure")
+
+Rel(sensors, system, "informs about state change", "Homematic IP")
+Rel(system, actuators, "controls", "Homematic IP")
+
+Rel(sensors, actuators, "controls", "Homematic IP", "direct connections")
+
+SHOW_FLOATING_LEGEND()
+AddElementTag("weakness", $borderColor="#d73027")
+@enduml

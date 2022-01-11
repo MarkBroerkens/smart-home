@@ -1,0 +1,35 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Component Diagram for Integration and Automation
+
+
+Container_Boundary(api, "Integration and Automation") {
+    Container(iobroker,"ioBroker", "core, UI", "")
+    Container(homekit_integration,"HomeKit Integration", "ioborker.yahka", "")
+    Container(zigbee_integration,"ZigBee Integration", "ioBroker.deconz", "")
+    Container(homematic_integration,"Homematic Integration", "ioBroker.hm-rpc, ioBroker.hm-rega", "Integrates with homematicIP, HomeMatic RFD, HomeMatic Logic Layer")
+}
+
+Container(homematic_control, "HomeMatic Control", "RaspberryMatic", "Controls Homematic devices. Provides Web UI and REST-API")
+Container(zigbee_control, "ZigBee Control", "deCONZ", "Controls ZigBee devices. Provides Phoscon App UI and REST-APIs")
+System_Ext(home_app, "Home App", "switches light bulbs")
+
+Person(admin, "Admin")
+
+Rel_D(homematic_integration, homematic_control, "controls", "REST")
+
+Rel_R(zigbee_integration, zigbee_control, "controls", "REST")
+Rel(home_app, homekit_integration, "controls", "hap")
+Rel_U(admin, iobroker, "configures", "hmi", "configures")
+Rel_L(admin, homematic_control, "configures", "hmi", "configures")
+Rel_R(admin, zigbee_control, "configures", "hmi", "configures")
+
+Rel_U(iobroker, homekit_integration, "extended by")
+Rel_L(iobroker, homematic_integration, "extended by")
+Rel_R(iobroker, zigbee_integration, "extended by")
+
+
+SHOW_FLOATING_LEGEND()
+AddElementTag("weakness", $borderColor="#d73027")
+@enduml
